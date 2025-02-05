@@ -1,6 +1,4 @@
-import Image from "next/image";
 import Landing from "../components/landing";
-import { Pirata_One } from "next/font/google";
 export default function Home() {
   return (
     <main

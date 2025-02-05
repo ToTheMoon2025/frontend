@@ -9,7 +9,6 @@ const ThreeScene = () => {
     const mountRef = useRef(null);
     const baseLookAtPosition = { x: 0, y: 1, z: 0 };
   const baseCameraPosition = { x: 5, y: 10, z: 10 };
-  const [posterClicked, setPosterClicked] = React.useState(null);
   useEffect(() => {
     // Scene and Camera
     const scene = new THREE.Scene();

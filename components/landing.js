@@ -51,7 +51,7 @@ const LandingScene = () => {
         scene.add(directionalLight);
 
         // Axes Helper
-        const axesHelper = new THREE.AxesHelper(15);
+        // const axesHelper = new THREE.AxesHelper(15);
         // scene.add(axesHelper);
         // Display camera position and direction
         const cameraInfo = document.createElement('div');
