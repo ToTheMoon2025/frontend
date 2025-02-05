@@ -1,6 +1,5 @@
 'use client';
 import Scene from '../../components/room';
-import { useEffect } from 'react';
 
 export default function RoomPage(){
     return (

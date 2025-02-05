@@ -5,10 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
-const helvetiker_regular = 'fonts/helvetiker_regular.json';
-
 const ThreeScene = () => {
-    const manager = new THREE.LoadingManager();
     const mountRef = useRef(null);
     const baseLookAtPosition = { x: 0, y: 1, z: 0 };
   const baseCameraPosition = { x: 5, y: 10, z: 10 };
@@ -22,40 +19,12 @@ const ThreeScene = () => {
     camera.add(listener);
     // Renderer
     const renderer = new THREE.WebGLRenderer();
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true; // Enable shadows
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
 
-
-    const room_boundaries = {
-        min_x: -5,
-        max_x: 5,
-        min_z: -5,
-        max_z: 5
-    }
-
     let song_playing = false;
-
-    class Block {
-        constructor(texture){
-            this.group = new THREE.Group();
-            this.texture = texture;
-            this.createBlock();
-        }
-
-        createBlock(){
-            const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
-            const textureLoader = new THREE.TextureLoader();
-            const blockMaterial = new THREE.MeshStandardMaterial({ 
-                map: textureLoader.load(this.texture)
-            });
-            const block = new THREE.Mesh(blockGeometry, blockMaterial);
-            this.group.add(block);
-        }
-    }
-
 
     // Room Class
     class Room {

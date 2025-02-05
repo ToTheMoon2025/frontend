@@ -3,7 +3,6 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
-import { lerp } from 'three/src/math/MathUtils.js';
 
 const LandingScene = () => {
     const landing = useRef(null);
@@ -36,7 +35,6 @@ const LandingScene = () => {
         camera.add(listener);
         // Renderer
         const renderer = new THREE.WebGLRenderer();
-        renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.25;
         renderer.setSize(window.innerWidth, window.innerHeight);
