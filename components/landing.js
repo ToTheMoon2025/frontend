@@ -300,12 +300,13 @@ const LandingScene = () => {
             const animateScroll = () => {
                 if (scrollDelta !== 0) {
                     const infoElement = document.getElementById('team-info');
+                    const descriptionElement = document.getElementById('description');
                     const spherical = new THREE.Spherical();
                     spherical.setFromVector3(camera.position);
                     spherical.theta += scrollDelta * scrollSpeed * 0.05; // Change axis of rotation to theta
-                    const maxOpacityAngle = Math.PI / 4;
-                    const opacity = 1 - Math.abs(spherical.theta - maxOpacityAngle) / maxOpacityAngle;
+                    const opacity = Math.abs(spherical.theta - Math.PI) / Math.PI;
                     infoElement.style.opacity = Math.max(0, Math.min(1, opacity));
+                    descriptionElement.style.opacity = Math.min(1, 1 - opacity);
                     spherical.theta = Math.max(0.01, Math.min(Math.PI - 0.01, spherical.theta)); // Clamp theta to prevent flipping
                     camera.position.setFromSpherical(spherical);
                     camera.lookAt(controls.target);

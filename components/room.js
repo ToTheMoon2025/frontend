@@ -11,6 +11,7 @@ const ThreeScene = () => {
   const baseCameraPosition = { x: 5, y: 10, z: 10 };
   useEffect(() => {
     // Scene and Camera
+    const loadingManager = new THREE.LoadingManager();
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('white');
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
