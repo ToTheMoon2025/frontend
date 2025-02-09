@@ -1,11 +1,12 @@
-"use client";
+"use client"
+
 import React, { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import Image from "next/image";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, UserPlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-//handle wallet balance fixed to 2 decimal numbers without rounding
 export function toFixed(num: number, fixed: number): string {
   const re = new RegExp(`^-?\\d+(?:\\.\\d{0,${fixed || -1}})?`);
   return num.toString().match(re)![0];
@@ -26,58 +26,72 @@ const WalletConnection = () => {
   const [open, setOpen] = useState<boolean>(false);
   const [balance, setBalance] = useState<number | null>(null);
   const [userWalletAddress, setUserWalletAddress] = useState<string>("");
+  const [showAuthDialog, setShowAuthDialog] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (!connection || !publicKey) {
-      return;
-    }
+  // ... (keep existing useEffect and handler functions)
 
-    connection.onAccountChange(
-      publicKey,
-      (updatedAccountInfo) => {
-        setBalance(updatedAccountInfo.lamports / LAMPORTS_PER_SOL);
-      },
-      "confirmed"
-    );
-
-    connection.getAccountInfo(publicKey).then((info) => {
-      if (info) {
-        setBalance(info?.lamports / LAMPORTS_PER_SOL);
-      }
-    });
-  }, [publicKey, connection]);
-
-  useEffect(() => {
-    setUserWalletAddress(publicKey?.toBase58()!);
-  }, [publicKey]);
-
-  const handleWalletSelect = async (walletName: any) => {
-    if (walletName) {
-      try {
-        select(walletName);
-        setOpen(false);
-      } catch (error) {
-        console.log("wallet connection err : ", error);
-      }
-    }
+  const handleLoginSignup = () => {
+    // Implement your login/signup logic here
+    console.log("Login/Signup clicked");
+    setShowAuthDialog(true);
   };
 
-  const handleDisconnect = async () => {
-    disconnect();
-  };
-
+  const handleDisconnect = () => {
+    console.log("Disconnected")
+  }
 
   return (
-    <div className="text-white">
-      <Dialog open={open} onOpenChange={(state) => {
-    console.log("Dialog open state changed:", state);
-    setOpen(state);
-}}>
-        <div className="flex gap-2 items-center">
+    <div className="fixed top-4 right-4 flex items-center justify-end gap-2 z-50">
+      {/* Web2 Login/Signup Button */}
+      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <DialogTrigger asChild>
+          <Button 
+            className="bg-black text-[20px] md:text-[30px] text-white ring-black ring-2 h-[40px] md:h-[60px] border-2 border-white font-slackey flex gap-2 items-center"
+            onClick={handleLoginSignup}
+          >
+            <UserPlus className="w-6 h-6" />
+            Login/Signup
+          </Button>
+        </DialogTrigger>
+        <DialogContent 
+          className="max-w-[450px] bg-black"
+          style={{
+            borderRadius: "30px",
+          }}
+        >
+          <DialogTitle className="text-white text-center text-lg">Login or Create Account</DialogTitle>
+          <div className="flex w-full justify-center items-center">
+            <div className="flex flex-col justify-start items-center space-y-5 w-[300px] md:w-[400px]">
+              <Button
+                onClick={() => {
+                  console.log("Login clicked");
+                }}
+                variant={"ghost"}
+                className="h-[40px] hover:bg-transparent hover:text-white text-[20px] text-white font-slackey flex w-full justify-center items-center"
+              >
+                Login
+              </Button>
+              <Button
+                onClick={() => {
+                  console.log("Sign up clicked");
+                }}
+                variant={"ghost"}
+                className="h-[40px] hover:bg-transparent hover:text-white text-[20px] text-white font-slackey flex w-full justify-center items-center"
+              >
+                Sign Up
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Web3 Wallet Connection */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <div className="flex items-center">
           {!publicKey ? (
             <>
               <DialogTrigger asChild>
-                <Button className="bg-black text-[20px] md:text-[30px] text-white ring-black ring-2 h-[40px] md:h-[60px] border-2 border-white font-slackey z-50">
+                <Button className="bg-black text-[20px] md:text-[30px] text-white ring-black ring-2 h-[40px] md:h-[60px] border-2 border-white font-slackey">
                   {connecting ? "connecting..." : "Connect Wallet"}
                 </Button>
               </DialogTrigger>
@@ -85,9 +99,9 @@ const WalletConnection = () => {
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="flex gap-2 bg-black text-[20px] md:text-[30px] text-white ring-black ring-2 h-[40px]  md:h-[60px] border-2 border-white font-slackey z-50">
-                  <div className="">
-                    <div className=" truncate md:w-[150px] w-[100px]  ">
+                <Button className="flex gap-2 bg-black text-[20px] md:text-[30px] text-white ring-black ring-2 h-[40px] md:h-[60px] border-2 border-white font-slackey">
+                  <div>
+                    <div className="truncate md:w-[150px] w-[100px]">
                       {publicKey.toBase58()}
                     </div>
                   </div>
@@ -101,7 +115,7 @@ const WalletConnection = () => {
               <DropdownMenuContent className="w-[300px] bg-black hover:bg-black">
                 <DropdownMenuItem className="flex justify-center">
                   <Button
-                    className="bg-[#ff5555] z-50 text-[20px]  text-white  border-2 border-white font-slackey"
+                    className="bg-[#ff5555] text-[20px] text-white border-2 border-white font-slackey"
                     onClick={handleDisconnect}
                   >
                     Disconnect
@@ -112,21 +126,20 @@ const WalletConnection = () => {
           )}
 
           <DialogContent
-            className="max-w-[450px] bg-black "
+            className="max-w-[450px] bg-black"
             style={{
               borderRadius: "30px",
             }}
           >
             <DialogTitle className="text-white text-center text-lg">Select a Wallet</DialogTitle>
-            <div className="flex w-full justify-center items-center ">
-              <div className="flex flex-col justify-start items-center space-y-5  w-[300px] md:w-[400px] overflow-y-auto ">
+            <div className="flex w-full justify-center items-center">
+              <div className="flex flex-col justify-start items-center space-y-5 w-[300px] md:w-[400px] overflow-y-auto">
                 {wallets.map((wallet) => (
                   <Button
                     key={wallet.adapter.name}
-                    //onClick={() => select(wallet.adapter.name)}
                     onClick={() => handleWalletSelect(wallet.adapter.name)}
                     variant={"ghost"}
-                    className=" h-[40px] hover:bg-transparent hover:text-white text-[20px] text-white font-slackey flex w-full justify-center items-center "
+                    className="h-[40px] hover:bg-transparent hover:text-white text-[20px] text-white font-slackey flex w-full justify-center items-center"
                   >
                     <div className="flex">
                       <Image
@@ -134,7 +147,7 @@ const WalletConnection = () => {
                         alt={wallet.adapter.name}
                         height={30}
                         width={30}
-                        className="mr-5 "
+                        className="mr-5"
                       />
                     </div>
                     <div className="font-slackey text-white wallet-name text-[20px]">
