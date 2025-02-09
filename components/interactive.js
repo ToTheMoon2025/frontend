@@ -5,6 +5,8 @@ import { FBXLoader } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { WallOverlayUI } from './WallOverlayUI.js'
+import { Poster } from './objects/Poster.js'
+import { PosterManagementUI } from './PosterControls.js'
 
 class BaseWall {
     constructor(width, height, depth, position, rotation = { x: 0, y: 0, z: 0 }, cameraRef) {
@@ -16,6 +18,7 @@ class BaseWall {
         this.rotation = rotation;
         this.cameraRef = cameraRef;
         this.posters = [];
+        this.editMode = false;
         this.createWall();
     }
 
@@ -41,6 +44,53 @@ class BaseWall {
         
         this.group.add(this.wallMesh);
     }
+
+    addPoster(poster) {
+        console.log('Adding poster to wall');
+        if (!this.group) {
+            console.error('Wall group not initialized');
+            return;
+        }
+        if (!poster) {
+            console.error('Invalid poster object');
+            return;
+        }
+
+        try {
+            const posterMesh = poster.createMesh();
+            if (!posterMesh) {
+                console.error('Failed to create poster mesh');
+                return;
+            }
+
+            this.posters.push(poster);
+            this.group.add(posterMesh);
+            console.log('Poster added successfully');
+            console.log('Total posters:', this.posters.length);
+            console.log('Group children:', this.group.children);
+        } catch (error) {
+            console.error('Error in addPoster:', error);
+        }
+    }
+
+    removePoster(poster) {
+        const index = this.posters.indexOf(poster);
+        if (index > -1) {
+            this.posters.splice(index, 1);
+            this.group.remove(poster.mesh);
+        }
+    }
+
+    toggleEditMode(enabled) {
+        this.editMode = enabled;
+        console.log(`Edit mode ${enabled ? 'enabled' : 'disabled'} for wall`);
+        // Update visual feedback for posters in edit mode
+        this.posters.forEach(poster => {
+            if (poster.mesh) {
+                poster.mesh.material.color.setHex(enabled ? 0x00ff00 : 0xffffff);
+            }
+        });
+    }
 }
 
 const ThreeScene = () => {
@@ -56,6 +106,9 @@ const ThreeScene = () => {
     const [selectedWall, setSelectedWall] = useState(null);
     const [isWallView, setIsWallView] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [isEditingPosters, setIsEditingPosters] = useState(false);
+    const [selectedPoster, setSelectedPoster] = useState(null);
+    
     const wallsRef = useRef({
         back: null,
         right: null
@@ -64,13 +117,18 @@ const ThreeScene = () => {
         back: null,
         right: null
     });
-
+    const posterDraggingRef = useRef({
+        isDragging: false,
+        selectedPoster: null,
+        dragOffset: new THREE.Vector3()
+    });
 
     // Simplified BackWall class
     class BackWall extends BaseWall {
         constructor(width, height, depth, position) {
             super(width, height, depth, position, { x: 0, y: 0, z: 0 });
             this.wallMesh.userData.wallId = 'back';
+            console.log('BackWall created');
         }
     }
 
@@ -79,6 +137,7 @@ const ThreeScene = () => {
         constructor(width, height, depth, position) {
             super(width, height, depth, position, { x: 0, y: -Math.PI / 2, z: 0 });
             this.wallMesh.userData.wallId = 'right';
+            console.log('RightWall created');
         }
     }
 
@@ -97,15 +156,27 @@ const ThreeScene = () => {
     // New handlers for wall editing
     const handleStartEditing = () => {
         setIsEditing(true);
+        setIsEditingPosters(true);
         if (controlsRef.current) {
             controlsRef.current.enabled = false;
+        }
+        
+        // Safely check for wall existence before calling toggleEditMode
+        if (selectedWall && wallsRef.current[selectedWall]?.toggleEditMode) {
+            wallsRef.current[selectedWall].toggleEditMode(true);
+        } else {
+            console.warn(`Wall ${selectedWall} not properly initialized`);
         }
     };
 
     const handleStopEditing = () => {
         setIsEditing(false);
+        setIsEditingPosters(false);
         if (controlsRef.current) {
             controlsRef.current.enabled = true;
+        }
+        if (selectedWall && wallsRef.current[selectedWall]) {
+            wallsRef.current[selectedWall].toggleEditMode(false);
         }
     };
 
@@ -247,6 +318,8 @@ const ThreeScene = () => {
                 { x: 0, y: ROOM_CONFIG.wall.height / 2, z: 0 },
                 cameraRef
             );
+
+        wallsRef.current[wallType] = wall;
 
         if (wallType === 'right') {
             wall.group.rotation.y = Math.PI;
@@ -421,35 +494,87 @@ const ThreeScene = () => {
 
     const WallUI = () => {
         if (!isWallView) return null;
-
+    
+        const handleAddPoster = () => {
+            console.log('Starting handleAddPoster');
+            console.log('Selected wall:', selectedWall);
+            console.log('Wall refs:', wallsRef.current);
+        
+            if (!selectedWall || !wallsRef.current[selectedWall]) {
+                console.warn('No wall selected or wall reference missing');
+                return;
+            }
+        
+            // Set default position in the center of the wall
+            const defaultPosition = {
+                x: 0,
+                y: ROOM_CONFIG.wall.height / 2,
+                z: 2
+            };
+        
+            try {
+                console.log('Attempting to add poster with position:', defaultPosition);
+                const newPoster = addPosterToWall(selectedWall, defaultPosition);
+                console.log('Add poster result:', newPoster);
+            } catch (error) {
+                console.error('Error adding poster:', error);
+            }
+        };
+    
+        const handleSaveChanges = () => {
+            handleStopEditing();
+            savePosterPositions(selectedWall);
+        };
+    
+        const handleCancel = () => {
+            handleStopEditing();
+            // Optionally reload the last saved state
+            loadPosterPositions(selectedWall);
+        };
+    
         return (
             <div className="fixed top-4 right-4 bg-white p-4 rounded-lg shadow-lg">
                 <h3 className="text-lg font-bold mb-4">{selectedWall} Wall</h3>
-                <div className="space-y-2">
-                    <button
-                        onClick={handleStartEditing}
-                        className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                    >
-                        Edit Wall
-                    </button>
-                    <button
-                        onClick={() => {
-                            setIsWallView(false);
-                            setSelectedWall(null);
-                            handleStopEditing();
-                            // Reset camera and controls
-                            if (cameraRef.current && controlsRef.current) {
-                                const { position, target } = CAMERA_CONFIG.fixed;
-                                cameraRef.current.position.set(position.x, position.y, position.z);
-                                controlsRef.current.target.set(target.x, target.y, target.z);
-                                controlsRef.current.update();
-                            }
-                        }}
-                        className="w-full px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-                    >
-                        Back to Room
-                    </button>
-                </div>
+                {!isEditing ? (
+                    <div className="space-y-2">
+                        <button
+                            onClick={handleStartEditing}
+                            className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                        >
+                            Edit Wall
+                        </button>
+                        <button
+                            onClick={clearWallStorage}
+                            className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                        >
+                            Clear Posters
+                        </button>
+                        <button
+                            onClick={() => {
+                                setIsWallView(false);
+                                setSelectedWall(null);
+                                handleStopEditing();
+                                if (cameraRef.current && controlsRef.current) {
+                                    const { position, target } = CAMERA_CONFIG.fixed;
+                                    cameraRef.current.position.set(position.x, position.y, position.z);
+                                    controlsRef.current.target.set(target.x, target.y, target.z);
+                                    controlsRef.current.update();
+                                }
+                            }}
+                            className="w-full px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                        >
+                            Back to Room
+                        </button>
+                    </div>
+                ) : (
+                    <PosterManagementUI 
+                        isEditing={isEditing}
+                        onStartEdit={handleStartEditing}
+                        onSave={handleSaveChanges}
+                        onAddPoster={handleAddPoster}
+                        onCancel={handleCancel}
+                    />
+                )}
             </div>
         );
     };
@@ -654,7 +779,168 @@ const ThreeScene = () => {
         if (controlsRef.current) {
             controlsRef.current.enabled = false;
         }
+        // Load saved posters for this wall
+        loadPosterPositions(wallType);
+        
+        setSelectedWall(wallType);
+        setIsWallView(true);
     }, [createWallScene]);
+
+    // Add to ThreeScene component
+    const addPosterToWall = (wallId, position) => {
+        if (!wallsRef.current[wallId]) return;
+        
+        const poster = new Poster(1, 1.5, position, wallId);
+        wallsRef.current[wallId].addPoster(poster);
+        
+        // Save poster positions to localStorage
+        savePosterPositions(wallId);
+    };
+
+    const savePosterPositions = (wallId) => {
+        if (!wallsRef.current[wallId]) return;
+        
+        const posterPositions = wallsRef.current[wallId].posters.map(poster => ({
+            width: poster.width,
+            height: poster.height,
+            position: { ...poster.position }
+        }));
+        
+        localStorage.setItem(`wall_${wallId}_posters`, JSON.stringify(posterPositions));
+    };
+
+    const loadPosterPositions = (wallId) => {
+        const savedPosters = localStorage.getItem(`wall_${wallId}_posters`);
+        if (savedPosters && wallsRef.current[wallId]) {
+            const positions = JSON.parse(savedPosters);
+            positions.forEach(posterData => {
+                const poster = new Poster(
+                    posterData.width,
+                    posterData.height,
+                    posterData.position
+                );
+                wallsRef.current[wallId].addPoster(poster);
+            });
+        }
+    };
+
+    const setupPosterDragging = useCallback(() => {
+        if (!cameraRef.current) return;
+    
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const dragOffset = new THREE.Vector3();
+        let isDragging = false;
+        let selectedPoster = null;
+    
+        const onMouseDown = (event) => {
+            if (!isEditingPosters || !selectedWall) return;
+    
+            // Calculate mouse position
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+            raycaster.setFromCamera(mouse, cameraRef.current);
+            
+            // Get the current wall
+            const wall = wallsRef.current[selectedWall];
+            if (!wall) return;
+    
+            // Check intersections with poster meshes
+            const intersects = raycaster.intersectObjects(
+                wall.posters.map(poster => poster.mesh)
+            );
+    
+            if (intersects.length > 0) {
+                isDragging = true;
+                selectedPoster = intersects[0].object.userData.poster;
+                
+                // Calculate drag offset
+                const intersectionPoint = intersects[0].point;
+                dragOffset.subVectors(selectedPoster.mesh.position, intersectionPoint);
+                
+                console.log('Started dragging poster:', selectedPoster);
+            }
+        };
+    
+        const onMouseMove = (event) => {
+            if (!isDragging || !selectedPoster || !isEditingPosters) return;
+
+            // Update mouse position
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, cameraRef.current);
+
+            // Create a plane aligned with the appropriate wall
+            const wallPlane = new THREE.Plane();
+            if (selectedWall === 'back') {
+                // For back wall - plane faces forward (normal points toward camera)
+                wallPlane.setFromNormalAndCoplanarPoint(
+                    new THREE.Vector3(0, 0, 1),
+                    new THREE.Vector3(0, 0, 0)
+                );
+            } else {
+                // For right wall - plane faces right (normal points to the right)
+                wallPlane.setFromNormalAndCoplanarPoint(
+                    new THREE.Vector3(1, 0, 0),
+                    new THREE.Vector3(0, 0, 0)
+                );
+            }
+
+            // Calculate intersection with wall plane
+            const intersectionPoint = new THREE.Vector3();
+            raycaster.ray.intersectPlane(wallPlane, intersectionPoint);
+            intersectionPoint.add(dragOffset);
+
+            // Constrain to wall boundaries
+            const wall = wallsRef.current[selectedWall];
+            const maxY = wall.height - selectedPoster.height / 2;
+            const minY = selectedPoster.height / 2;
+
+            if (selectedWall === 'back') {
+                // For back wall, constrain x and y
+                const maxX = wall.width / 2 - selectedPoster.width / 2;
+                const minX = -wall.width / 2 + selectedPoster.width / 2;
+                intersectionPoint.x = Math.max(minX, Math.min(maxX, intersectionPoint.x));
+                intersectionPoint.y = Math.max(minY, Math.min(maxY, intersectionPoint.y));
+                intersectionPoint.z = 0.25; // Small offset from wall
+            } else {
+                // For right wall, constrain z and y, keep x fixed
+                const maxZ = wall.width / 2 - selectedPoster.width / 2;
+                const minZ = -wall.width / 2 + selectedPoster.width / 2;
+                intersectionPoint.z = Math.max(minZ, Math.min(maxZ, intersectionPoint.z));
+                intersectionPoint.y = Math.max(minY, Math.min(maxY, intersectionPoint.y));
+                intersectionPoint.x = 1.2; // Small offset from wall
+            }
+
+            // Update poster position
+            selectedPoster.setPosition(
+                intersectionPoint.x,
+                intersectionPoint.y,
+                intersectionPoint.z
+            );
+        };
+    
+        const onMouseUp = () => {
+            if (isDragging && selectedPoster) {
+                console.log('Stopped dragging poster:', selectedPoster);
+                savePosterPositions(selectedWall);
+            }
+            isDragging = false;
+            selectedPoster = null;
+        };
+    
+        window.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    
+        return () => {
+            window.removeEventListener('mousedown', onMouseDown);
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+    }, [isEditingPosters, selectedWall, savePosterPositions]);
 
     const handleResize = useCallback(() => {
         if (!cameraRef.current || !rendererRef.current) return;
@@ -663,6 +949,21 @@ const ThreeScene = () => {
         cameraRef.current.updateProjectionMatrix();
         rendererRef.current.setSize(window.innerWidth, window.innerHeight);
     }, []);
+
+    const clearWallStorage = useCallback(() => {
+        localStorage.removeItem('wall_back_posters');
+        localStorage.removeItem('wall_right_posters');
+        console.log('Wall storage cleared');
+        
+        // Also clear the posters from the current wall if any
+        if (selectedWall && wallsRef.current[selectedWall]) {
+            const wall = wallsRef.current[selectedWall];
+            // Remove each poster from the wall
+            [...wall.posters].forEach(poster => {
+                wall.removePoster(poster);
+            });
+        }
+    }, [selectedWall]);
 
     useEffect(() => {
         if (!mountRef.current) return;
@@ -707,6 +1008,7 @@ const ThreeScene = () => {
         // Rest of your setup...
         setupLights(sceneRef.current);
         loadCharacter(sceneRef.current);
+        const cleanupPosterDragging = setupPosterDragging();
         animate();
     
         // Event listeners...
@@ -718,7 +1020,7 @@ const ThreeScene = () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
             window.removeEventListener('resize', handleResize);
-            
+            cleanupPosterDragging();
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
             }
@@ -747,6 +1049,13 @@ const ThreeScene = () => {
             }
         };
     }, [animate, createCamera, createRoom, createRenderer, createScene, handleKeyDown, handleKeyUp, handleResize, loadCharacter, setupLights]);
+
+    useEffect(() => {
+        if (isEditing) {
+            const cleanup = setupPosterDragging();
+            return () => cleanup();
+        }
+    }, [isEditing, setupPosterDragging]);
 
     useEffect(() => {
         if (isWallView && cameraRef.current && selectedWall) {
