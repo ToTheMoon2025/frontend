@@ -129,14 +129,13 @@ const LandingScene = () => {
             modelPosition: { x: 3, y: -3, z: -3.5 },
             modelRotation: { x: 0, y: Math.PI / 4, z:-Math.PI/6 },
             modelScale: { x: 0.06, y: 0.06, z: 0.06 }
-            },
-            {
-            modelPath: 'models/TeddyBearPT.fbx',
-            texturePath: 'textures/TeddyPT.TGA.png',
-            modelPosition: { x: -2, y: -1, z: 8 },
-            modelRotation: { x: - 2 * Math.PI / 4, y: Math.PI / 3, z: 3 * Math.PI / 5 },
-            modelScale: { x: 0.5, y: 0.5, z: 0.5 }
-            },
+            },{
+                modelPath: 'models/TeddyBearPT.fbx',
+                texturePath: 'textures/TeddyPT.TGA.png',
+                modelPosition: { x: -2, y: -1, z: 8 },
+                modelRotation: { x: - 2 * Math.PI / 4, y: Math.PI / 3, z: 3 * Math.PI / 5 },
+                modelScale: { x: 0.125, y: 0.125, z: 0.125 }
+                },
             {
                 modelPath: 'models/lpbns_br_slipper.fbx',
                 texturePath: 'textures/T_Gecko.png',
@@ -155,7 +154,7 @@ const LandingScene = () => {
 
         const door = {
             modelPath: 'models/lpbns_br_door.fbx',
-            texturePath: 'textures/T_Taipan.png',
+            texturePath: 'textures/wall.jpg',
             modelPosition: { x: 0, y: 0, z: 0 },
             modelRotation: { x: 0, y: 0, z: 0 },
             modelScale: { x: 0.02, y: 0.02, z: 0.02}
@@ -167,7 +166,12 @@ const LandingScene = () => {
                     if (child.isMesh) {
                         child.castShadow = true;
                         const texture = new THREE.TextureLoader().load(door.texturePath);
-                        child.material = new THREE.MeshStandardMaterial({ map: texture });
+                        child.material = new THREE.MeshStandardMaterial({ 
+                            map: texture,
+                            color: 0xf6ca9e, // Saddle Brown color
+                            roughness: 0.7,
+                            metalness: 0.1
+                        });
                     }
                 });
 
@@ -203,7 +207,7 @@ const LandingScene = () => {
                         setTimeout(() => {
                             requestAnimationFrame(() => swingDoor(performance.now()));
                             setTimeout(() => {
-                                window.location.href = '/room';
+                                window.location.href = '/interactive';
                             }, 300); // Wait for the spin animation to finish
                         }, 800); // Wait for the camera lerp to finish
                     }
@@ -256,12 +260,42 @@ const LandingScene = () => {
         // Camera position
         camera.position.set(baseCameraPosition.x, baseCameraPosition.y, baseCameraPosition.z);
         camera.lookAt(baseCameraLookAt.x, baseCameraLookAt.y, baseCameraLookAt.z);
-        const moonGeometry = new THREE.SphereGeometry(20, 32, 32);
-        const moonMaterial = new THREE.MeshStandardMaterial({ color: 0xffffcc });
-        const moon = new THREE.Mesh(moonGeometry, moonMaterial);
-        moon.position.set(0, -20, 0);
-        moon.castShadow = true; // Enable shadow casting
-        scene.add(moon);
+        // Set camera position and look at
+        camera.position.set(baseCameraPosition.x, baseCameraPosition.y, baseCameraPosition.z);
+        camera.lookAt(baseCameraLookAt.x, baseCameraLookAt.y, baseCameraLookAt.z);
+
+        // Create a texture loader
+        const textureLoader = new THREE.TextureLoader();
+
+        // Load Earth textures
+        const earthTexture = textureLoader.load('textures/earth.jpg');
+        // Create Earth geometry (using the same size as your moon)
+        const earthGeometry = new THREE.SphereGeometry(20, 64, 64); // Increased segments for better detail
+
+        // Create Earth material with textures
+        const earthMaterial = new THREE.MeshPhongMaterial({
+            map: earthTexture,
+            bumpScale: 0.5,
+            specular: new THREE.Color('grey'),
+            shininess: 5
+        });
+
+        // Create Earth mesh
+        const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+        earth.position.set(0, -20, 0);
+        earth.castShadow = true;
+        earth.rotation.y = Math.PI; // Adjust initial rotation if needed
+        // Add Earth to scene
+        scene.add(earth);
+
+        // Optional: Add animation
+        function animate() {
+            requestAnimationFrame(animate);
+            earth.rotation.y += 0.001; // Rotate Earth
+            clouds.rotation.y += 0.0015; // Rotate clouds slightly faster
+            renderer.render(scene, camera);
+        }
+        animate();
 
         // Controls
         const controls = new OrbitControls(camera, renderer.domElement);
