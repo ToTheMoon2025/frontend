@@ -28,17 +28,48 @@ const WalletConnection = () => {
   const [userWalletAddress, setUserWalletAddress] = useState<string>("");
   const [showAuthDialog, setShowAuthDialog] = useState<boolean>(false);
 
-  // ... (keep existing useEffect and handler functions)
+  useEffect(() => {
+    if (!connection || !publicKey) {
+      return;
+    }
 
-  const handleLoginSignup = () => {
-    // Implement your login/signup logic here
-    console.log("Login/Signup clicked");
-    setShowAuthDialog(true);
+    connection.onAccountChange(
+      publicKey,
+      (updatedAccountInfo) => {
+        setBalance(updatedAccountInfo.lamports / LAMPORTS_PER_SOL);
+      },
+      "confirmed"
+    );
+
+    connection.getAccountInfo(publicKey).then((info) => {
+      if (info) {
+        setBalance(info?.lamports / LAMPORTS_PER_SOL);
+      }
+    });
+  }, [publicKey, connection]);
+
+  useEffect(() => {
+    setUserWalletAddress(publicKey?.toBase58()!);
+  }, [publicKey]);
+
+  const handleLoginSignup = async () => {
+    console.log("Login/Signup")
+  }
+
+  const handleWalletSelect = async (walletName: any) => {
+    if (walletName) {
+      try {
+        select(walletName);
+        setOpen(false);
+      } catch (error) {
+        console.log("wallet connection err : ", error);
+      }
+    }
   };
 
-  const handleDisconnect = () => {
-    console.log("Disconnected")
-  }
+  const handleDisconnect = async () => {
+    disconnect();
+  };
 
   return (
     <div className="fixed top-4 right-4 flex items-center justify-end gap-2 z-50">
