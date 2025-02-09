@@ -111,11 +111,12 @@ const ThreeScene = () => {
     
     const wallsRef = useRef({
         back: null,
-        right: null
+        // right: null,
     });
+    const roomWallRef = useRef(null);
     const wallSceneRef = useRef({
         back: null,
-        right: null
+        // right: null,
     });
     const posterDraggingRef = useRef({
         isDragging: false,
@@ -133,13 +134,13 @@ const ThreeScene = () => {
     }
 
     // Simplified RightWall class
-    class RightWall extends BaseWall {
-        constructor(width, height, depth, position) {
-            super(width, height, depth, position, { x: 0, y: -Math.PI / 2, z: 0 });
-            this.wallMesh.userData.wallId = 'right';
-            console.log('RightWall created');
-        }
-    }
+    // class RightWall extends BaseWall {
+    //     constructor(width, height, depth, position) {
+    //         super(width, height, depth, position, { x: 0, y: -Math.PI / 2, z: 0 });
+    //         this.wallMesh.userData.wallId = 'right';
+    //         console.log('RightWall created');
+    //     }
+    // }
 
     useEffect(() => {
         const handleClick = (event) => {
@@ -168,7 +169,33 @@ const ThreeScene = () => {
             console.warn(`Wall ${selectedWall} not properly initialized`);
         }
     };
-
+    const updateRoomWallPosters = () => {
+        // Make sure we have a wall reference and a valid wall id
+        if (!roomWallRef.current || !selectedWall) return;
+        
+        // Remove current posters from the room wall
+        if (roomWallRef.current && roomWallRef.current.posters) {
+        roomWallRef.current.posters.forEach(poster => {
+            roomWallRef.current.removePoster(poster);
+        });
+        }
+        roomWallRef.current.posters = [];
+      
+        // Load the saved poster positions from localStorage
+        const savedPosters = localStorage.getItem(`wall_${selectedWall}_posters`);
+        if (savedPosters) {
+          const positions = JSON.parse(savedPosters);
+          positions.forEach(posterData => {
+            const poster = new Poster(
+              posterData.width,
+              posterData.height,
+              posterData.position,
+              selectedWall
+            );
+            roomWallRef.current.addPoster(poster);
+          });
+        }
+    };
     const handleStopEditing = () => {
         setIsEditing(false);
         setIsEditingPosters(false);
@@ -177,6 +204,9 @@ const ThreeScene = () => {
         }
         if (selectedWall && wallsRef.current[selectedWall]) {
             wallsRef.current[selectedWall].toggleEditMode(false);
+        }
+        if (roomWallRef.current) {
+            updateRoomWallPosters();
         }
     };
 
@@ -188,7 +218,7 @@ const ThreeScene = () => {
         moveForward: false,
         rotateLeft: false,
         rotateRight: false,
-        theta: Math.PI,
+        theta: characterRef.current ? characterRef.current.rotation.y : 0,
         movementSpeed: 2,
         rotationSpeed: 2
     });
@@ -303,21 +333,22 @@ const ThreeScene = () => {
         });
 
         // Create appropriate wall based on type
-        const wall = wallType === 'back' ? 
+        const wall = 
+        // wallType === 'back' ? 
             new BackWall(
                 ROOM_CONFIG.wall.width,
                 ROOM_CONFIG.wall.height,
                 ROOM_CONFIG.wall.depth,
                 { x: 0, y: ROOM_CONFIG.wall.height / 2, z: 0 },
                 cameraRef
-            ) :
-            new RightWall(
-                ROOM_CONFIG.wall.width,
-                ROOM_CONFIG.wall.height,
-                ROOM_CONFIG.wall.depth,
-                { x: 0, y: ROOM_CONFIG.wall.height / 2, z: 0 },
-                cameraRef
-            );
+            )
+            // new RightWall(
+            //     ROOM_CONFIG.wall.width,
+            //     ROOM_CONFIG.wall.height,
+            //     ROOM_CONFIG.wall.depth,
+            //     { x: 0, y: ROOM_CONFIG.wall.height / 2, z: 0 },
+            //     cameraRef
+            // );
 
         wallsRef.current[wallType] = wall;
 
@@ -474,20 +505,21 @@ const ThreeScene = () => {
         );
 
         // Create right wall
-        const rightWall = new RightWall(
-            ROOM_CONFIG.wall.width,
-            ROOM_CONFIG.wall.height,
-            ROOM_CONFIG.wall.depth,
-            {
-                x: ROOM_CONFIG.floor.width / 2,
-                y: ROOM_CONFIG.wall.height / 2 - 0.5,
-                z: 0
-            },
-            cameraRef
-        );
+        // const rightWall = new RightWall(
+        //     ROOM_CONFIG.wall.width,
+        //     ROOM_CONFIG.wall.height,
+        //     ROOM_CONFIG.wall.depth,
+        //     {
+        //         x: ROOM_CONFIG.floor.width / 2,
+        //         y: ROOM_CONFIG.wall.height / 2 - 0.5,
+        //         z: 0
+        //     },
+        //     cameraRef
+        // );
 
         room.add(backWall.group);
-        room.add(rightWall.group);
+        // room.add(rightWall.group);
+        roomWallRef.current = backWall.group;
 
         return room;
     }, [cameraRef, createWallScene]);
@@ -520,7 +552,7 @@ const ThreeScene = () => {
                 console.error('Error adding poster:', error);
             }
         };
-    
+        
         const handleSaveChanges = () => {
             handleStopEditing();
             savePosterPositions(selectedWall);
@@ -554,6 +586,7 @@ const ThreeScene = () => {
                                 setIsWallView(false);
                                 setSelectedWall(null);
                                 handleStopEditing();
+                                updateRoomWallPosters();
                                 if (cameraRef.current && controlsRef.current) {
                                     const { position, target } = CAMERA_CONFIG.fixed;
                                     cameraRef.current.position.set(position.x, position.y, position.z);
@@ -824,6 +857,8 @@ const ThreeScene = () => {
         }
     };
 
+    
+
     const setupPosterDragging = useCallback(() => {
         if (!cameraRef.current) return;
     
@@ -867,21 +902,22 @@ const ThreeScene = () => {
             if (!isDragging || !selectedPoster || !isEditingPosters) return;
 
             // Update mouse position
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, cameraRef.current);
 
             // Create a plane aligned with the appropriate wall
             const wallPlane = new THREE.Plane();
             if (selectedWall === 'back') {
                 // For back wall - plane faces forward (normal points toward camera)
+                mouse.x = ((event.clientX / window.innerWidth) * 2 - 1);
+                raycaster.setFromCamera(mouse, cameraRef.current);
                 wallPlane.setFromNormalAndCoplanarPoint(
                     new THREE.Vector3(0, 0, 1),
                     new THREE.Vector3(0, 0, 0)
                 );
             } else {
                 // For right wall - plane faces right (normal points to the right)
+                mouse.x = -((event.clientX / window.innerWidth) * 2 - 1);
+                raycaster.setFromCamera(mouse, cameraRef.current);
                 wallPlane.setFromNormalAndCoplanarPoint(
                     new THREE.Vector3(1, 0, 0),
                     new THREE.Vector3(0, 0, 0)
