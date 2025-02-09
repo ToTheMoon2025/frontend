@@ -132,7 +132,7 @@ const LandingScene = () => {
             },
             {
             modelPath: 'models/TeddyBearPT.fbx',
-            texturePath: 'textures/TeddyPT.TGA.png',
+            texturePath: 'textures/BearNM.TGA.png',
             modelPosition: { x: -2, y: -1, z: 8 },
             modelRotation: { x: - 2 * Math.PI / 4, y: Math.PI / 3, z: 3 * Math.PI / 5 },
             modelScale: { x: 0.5, y: 0.5, z: 0.5 }
