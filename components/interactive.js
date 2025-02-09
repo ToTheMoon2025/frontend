@@ -4,8 +4,9 @@ import * as THREE from 'three';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import WebcamCapture from './webcam';
 
-const ThreeScene = () => {
+const ThreeScene = ({ bagSkins }) => {
     const mountRef = useRef(null);
     const sceneRef = useRef(null);
     const rendererRef = useRef(null);
@@ -305,6 +306,116 @@ const ThreeScene = () => {
                 console.error('An error occurred loading the character:', error);
             }
         );
+        let skinChoice = 0;
+        let skinObject = null;
+
+        const loadSkin = (choice) => {
+            if (skinObject) {
+            scene.remove(skinObject);
+            }
+            loader.load(bagSkins[choice].model, function (object) {
+            object.traverse(function (child) {
+                if (child.isMesh) {
+                child.castShadow = true;
+                const texture = new THREE.TextureLoader().load(bagSkins[choice].texture);
+                child.material.map = texture;
+                child.material.side = THREE.DoubleSide; // Render both sides of the skin
+                }
+            });
+            object.scale.set(2, 2, 2);
+            object.position.set(-3, -1, -3);
+            scene.add(object);
+            skinObject = object;
+            });
+        };
+
+        if (bagSkins.length > 0) {
+            loadSkin(skinChoice);
+
+            const onMouseClick = (event) => {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, cameraRef.current);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+            const skinElement = document.getElementById('bag-skin-section');
+            const skin = document.getElementById('bag-skin');
+            const skinName = document.getElementById('skin-name');
+            const skinCost = document.getElementById('skin-cost');
+            const captureElement = document.getElementById('webcam-capture');
+            captureElement.style.display = 'block';
+            if (intersects.length > 0) {
+                // change skin choice and reload the model
+                skinChoice = (skinChoice + 1) % bagSkins.length;
+                loadSkin(skinChoice);
+                if (skinElement) {
+                    skinElement.style.opacity = 1;
+                    skin.src = bagSkins[skinChoice].texture;
+                    skinName.innerHTML = bagSkins[skinChoice].name;
+                    skinCost.innerHTML = bagSkins[skinChoice].cost + " SOL";
+                }
+            }
+            else{
+                if (skinElement) {
+                    skinElement.style.opacity = 0;
+                }
+                if (captureElement) {
+                    captureElement.style.display = 'none';
+                }
+            }
+            };
+
+            window.addEventListener('click', onMouseClick);
+
+        }
+        class Poster {
+            constructor(imagePath, baseX = 0, baseY = 0, baseZ = 0, scale = 1) {
+                this.group = new THREE.Group();
+                this.imagePath = imagePath;
+                this.position = { x: baseX, y: baseY, z: baseZ };
+                this.scale = scale;
+                this.createPoster();
+            }
+    
+            createPoster() {
+                const img = new Image();
+                img.src = this.imagePath;
+                img.onload = () => {
+                    const posterGeometry = new THREE.PlaneGeometry(img.width / 1000 * this.scale, img.height / 1000 * this.scale);
+                    const textureLoader = new THREE.TextureLoader();
+                    const posterMaterial = new THREE.MeshBasicMaterial({
+                        map: textureLoader.load(this.imagePath),
+                        side: THREE.DoubleSide
+                    });
+                    const poster = new THREE.Mesh(posterGeometry, posterMaterial);
+                    poster.position.set(this.position.x, this.position.y, this.position.z);
+                    poster.castShadow = true;
+    
+                    const direction = new THREE.Vector3(0, this.position.y, 0); // Look towards Y axis
+                    poster.lookAt(direction);
+    
+                    this.group.add(poster);
+    
+                    const frameGeometry = new THREE.BoxGeometry((img.width / 1000 * 1.05) * this.scale, (img.height / 1000 * 1.05) * this.scale, 0.05);
+                    const frameMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ee });
+                    const frame = new THREE.Mesh(frameGeometry, frameMaterial);
+                    frame.position.set(this.position.x * 1.01, this.position.y, this.position.z * 1.01);
+                    frame.lookAt(direction);
+                    this.group.add(frame);
+                }
+            }
+        }
+    
+        // Add room to the scene
+        const poster = new Poster('images/IMG_0988.jpg', 0.5, 3, -6);
+        const penguin_poster = new Poster('images/penguin.jpg', -10, 6, 0, 10);
+        const nyan_poster = new Poster('images/nyan.jpg', 8, 4, 0, 3);
+        const monkey_poster = new Poster('images/monke.jpg', 7, 4, -7, 10);
+        scene.add(poster.group);
+        scene.add(penguin_poster.group);
+        scene.add(nyan_poster.group);
+        scene.add(monkey_poster.group);
     }, []);
 
     const handleKeyDown = useCallback((event) => {
@@ -412,7 +523,7 @@ const ThreeScene = () => {
         controlsRef.current.maxPolarAngle = Math.PI / 2.5;
         controlsRef.current.minAzimuthAngle = -Math.PI / 4;
         controlsRef.current.maxAzimuthAngle = Math.PI / 4;
-    
+        
         sceneRef.current.add(createRoom());
         setupLights(sceneRef.current);
         loadCharacter(sceneRef.current);
@@ -506,3 +617,4 @@ const ThreeScene = () => {
 };
 
 export default ThreeScene;
+

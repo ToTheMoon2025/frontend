@@ -43,6 +43,7 @@ export default function Home() {
           userSelect: 'none',
           opacity: 0,
           background: 'rgba(0, 0, 0, 0.8)',
+          color:'white'
         }}
       >
         Fostering a new era of digital social spaces where NFTs become a bridge for creativity, interaction, and cultural exchange.

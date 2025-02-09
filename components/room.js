@@ -120,7 +120,6 @@ const ThreeScene = () => {
                   
                       // Animate the camera: move it to the target position and make it look at the poster.
                       lerp_reset_camera(targetPosition, poster.position);
-                      console.log(posterClicked);
                       const captionElement = document.getElementById('poster_caption');
                       captionElement.innerText = 'This is from ' + img.src.split('/').pop();
                     }
