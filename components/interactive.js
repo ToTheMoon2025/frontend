@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { FBXLoader } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { WallOverlayUI } from './WallOverlayUI.js'
 
 class BaseWall {
     constructor(width, height, depth, position, rotation = { x: 0, y: 0, z: 0 }, cameraRef) {
@@ -65,151 +66,21 @@ const ThreeScene = () => {
     });
 
 
-class BackWall extends BaseWall {
-    constructor(width, height, depth, position, cameraRef) {
-        super(width, height, depth, position, { x: 0, y: 0, z: 0 }, cameraRef);
-        this.wallMesh.userData.wallId = 'back';
-        this.setupClickHandler();
+    // Simplified BackWall class
+    class BackWall extends BaseWall {
+        constructor(width, height, depth, position) {
+            super(width, height, depth, position, { x: 0, y: 0, z: 0 });
+            this.wallMesh.userData.wallId = 'back';
+        }
     }
 
-    setupClickHandler() {
-        const onMouseClick = (event) => {
-            if (!this.cameraRef.current || isWallView) return;
-            
-            const raycaster = new THREE.Raycaster();
-            const mouse = new THREE.Vector2();
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, this.cameraRef.current);
-            const intersects = raycaster.intersectObject(this.wallMesh);
-
-            if (intersects.length > 0) {
-                // Transition to back wall view
-                const startTime = Date.now();
-                const duration = 2000; // 2 seconds
-                const startPos = this.cameraRef.current.position.clone();
-                const targetPos = new THREE.Vector3(0, this.height / 2, 4);
-                const startLookAt = new THREE.Vector3();
-                this.cameraRef.current.getWorldDirection(startLookAt);
-                startLookAt.multiplyScalar(10).add(this.cameraRef.current.position);
-                const targetLookAt = new THREE.Vector3(0, this.height / 2, 0);
-
-                const animate = () => {
-                    const currentTime = Date.now();
-                    const elapsed = currentTime - startTime;
-                    let t = elapsed / duration;
-
-                    if (t < 1) {
-                        t = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // Ease in-out
-                        const newPos = new THREE.Vector3(
-                            startPos.x + (targetPos.x - startPos.x) * t,
-                            startPos.y + (targetPos.y - startPos.y) * t,
-                            startPos.z + (targetPos.z - startPos.z) * t
-                        );
-                        const newLookAt = new THREE.Vector3(
-                            startLookAt.x + (targetLookAt.x - startLookAt.x) * t,
-                            startLookAt.y + (targetLookAt.y - startLookAt.y) * t,
-                            startLookAt.z + (targetLookAt.z - startLookAt.z) * t
-                        );
-
-                        this.cameraRef.current.position.copy(newPos);
-                        this.cameraRef.current.lookAt(newLookAt);
-                        requestAnimationFrame(animate);
-                    } else {
-                        // Final position
-                        this.cameraRef.current.position.copy(targetPos);
-                        this.cameraRef.current.lookAt(targetLookAt);
-                        if (this.onWallClick) {
-                            this.onWallClick('back');
-                        }
-                    }
-                };
-
-                animate();
-            }
-        };
-
-        window.addEventListener('click', onMouseClick.bind(this));
+    // Simplified RightWall class
+    class RightWall extends BaseWall {
+        constructor(width, height, depth, position) {
+            super(width, height, depth, position, { x: 0, y: -Math.PI / 2, z: 0 });
+            this.wallMesh.userData.wallId = 'right';
+        }
     }
-
-    setClickHandler(handler) {
-        this.onWallClick = handler;
-    }
-}
-
-class RightWall extends BaseWall {
-    constructor(width, height, depth, position, cameraRef) {
-        super(width, height, depth, position, { x: 0, y: -Math.PI / 2, z: 0 }, cameraRef);
-        this.wallMesh.userData.wallId = 'right';
-        this.setupClickHandler();
-    }
-
-    setupClickHandler() {
-        const onMouseClick = (event) => {
-            if (!this.cameraRef.current || isWallView) return;
-            
-            const raycaster = new THREE.Raycaster();
-            const mouse = new THREE.Vector2();
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, this.cameraRef.current);
-            const intersects = raycaster.intersectObject(this.wallMesh);
-
-            if (intersects.length > 0) {
-                // Transition to right wall view
-                const startTime = Date.now();
-                const duration = 2000; // 2 seconds
-                const startPos = this.cameraRef.current.position.clone();
-                const targetPos = new THREE.Vector3(-4, this.height / 2, 0);
-                const startLookAt = new THREE.Vector3();
-                this.cameraRef.current.getWorldDirection(startLookAt);
-                startLookAt.multiplyScalar(10).add(this.cameraRef.current.position);
-                const targetLookAt = new THREE.Vector3(0, this.height / 2, 0);
-
-                const animate = () => {
-                    const currentTime = Date.now();
-                    const elapsed = currentTime - startTime;
-                    let t = elapsed / duration;
-
-                    if (t < 1) {
-                        t = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // Ease in-out
-                        const newPos = new THREE.Vector3(
-                            startPos.x + (targetPos.x - startPos.x) * t,
-                            startPos.y + (targetPos.y - startPos.y) * t,
-                            startPos.z + (targetPos.z - startPos.z) * t
-                        );
-                        const newLookAt = new THREE.Vector3(
-                            startLookAt.x + (targetLookAt.x - startLookAt.x) * t,
-                            startLookAt.y + (targetLookAt.y - startLookAt.y) * t,
-                            startLookAt.z + (targetLookAt.z - startLookAt.z) * t
-                        );
-
-                        this.cameraRef.current.position.copy(newPos);
-                        this.cameraRef.current.lookAt(newLookAt);
-                        requestAnimationFrame(animate);
-                    } else {
-                        // Final position
-                        this.cameraRef.current.position.copy(targetPos);
-                        this.cameraRef.current.lookAt(targetLookAt);
-                        if (this.onWallClick) {
-                            this.onWallClick('right');
-                        }
-                    }
-                };
-
-                animate();
-            }
-        };
-
-        window.addEventListener('click', onMouseClick.bind(this));
-    }
-
-    setClickHandler(handler) {
-        this.onWallClick = handler;
-    }
-}
 
     useEffect(() => {
         const handleClick = (event) => {
@@ -237,41 +108,6 @@ class RightWall extends BaseWall {
             controlsRef.current.enabled = true;
         }
     };
-
-    const handleAddPoster = async (posterConfig) => {
-        const wall = wallsRef.current[selectedWall];
-        if (!wall) return;
-
-        try {
-            const texture = await new Promise((resolve, reject) => {
-                new THREE.TextureLoader().load(posterConfig.texturePath, resolve, undefined, reject);
-            });
-
-            const posterId = wall.addPoster({
-                width: posterConfig.width,
-                height: posterConfig.height,
-                position: new THREE.Vector3(posterConfig.x, posterConfig.y, 0.1),
-                texture: texture,
-            });
-
-            // Return the poster ID for future reference
-            return posterId;
-        } catch (error) {
-            console.error('Failed to add poster:', error);
-        }
-    };
-
-    const handleUpdateWallTexture = async (texturePath) => {
-        const wall = wallsRef.current[selectedWall];
-        if (!wall) return;
-
-        try {
-            await wall.setWallTexture(texturePath);
-        } catch (error) {
-            console.error('Failed to update wall texture:', error);
-        }
-    };
-
 
     const viewState = useRef({
         isThirdPerson: true, // Track current view mode
@@ -387,7 +223,13 @@ class RightWall extends BaseWall {
 
     const createWallScene = useCallback((wallType) => {
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf0f0f0); // Light gray background
+        scene.background = new THREE.Color('skyblue');
+
+        const textureLoader = new THREE.TextureLoader();
+        const wallTexture = textureLoader.load('textures/wall.jpg', (texture) => {
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(2, 2);
+        });
 
         // Create appropriate wall based on type
         const wall = wallType === 'back' ? 
@@ -395,55 +237,124 @@ class RightWall extends BaseWall {
                 ROOM_CONFIG.wall.width,
                 ROOM_CONFIG.wall.height,
                 ROOM_CONFIG.wall.depth,
-                { x: 0, y: 0, z: 0 },
+                { x: 0, y: ROOM_CONFIG.wall.height / 2, z: 0 },
                 cameraRef
             ) :
             new RightWall(
                 ROOM_CONFIG.wall.width,
                 ROOM_CONFIG.wall.height,
                 ROOM_CONFIG.wall.depth,
-                { x: 0, y: 0, z: 0 },
+                { x: 0, y: ROOM_CONFIG.wall.height / 2, z: 0 },
                 cameraRef
             );
 
+        if (wallType === 'right') {
+            wall.group.rotation.y = Math.PI;
+        }
+
+        if (wall.wallMesh) {
+            wall.wallMesh.material = new THREE.MeshStandardMaterial({
+                map: wallTexture,
+                roughness: 0.4,
+                metalness: 0.0,
+                color: 0xffffff,
+                envMapIntensity: 1.0
+            });
+        }
+
+        if (wall.wallMesh) {
+            wall.wallMesh.material = new THREE.MeshStandardMaterial({
+                map: wallTexture,
+                roughness: 0.4,
+                metalness: 0.0,
+                color: 0xffffff,
+                envMapIntensity: 1.0
+            });
+        }
+    
         scene.add(wall.group);
 
-        // Add lights specific to wall view
-        // Main ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-        scene.add(ambientLight);
+        // Create and add floor
+        const floorTexture = textureLoader.load('textures/ground.png', (texture) => {
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(2, 2);
+        });
+
+        const floor = new THREE.Mesh(
+            new RoundedBoxGeometry(
+                ROOM_CONFIG.floor.width,
+                ROOM_CONFIG.floor.height,
+                ROOM_CONFIG.floor.depth,
+                2,
+                0.2
+            ),
+            new THREE.MeshStandardMaterial({
+                map: floorTexture,
+                roughness: 0.8,
+                metalness: 0.2
+            })
+        );
+        floor.position.y = -0.433;
+        floor.receiveShadow = true;
+
+        // Position floor based on wall type
+        if (wallType === 'back') {
+            floor.position.z = ROOM_CONFIG.floor.depth / 2;
+        } else {
+            floor.position.x = -ROOM_CONFIG.floor.width / 2;
+            
+        }
+
+        scene.add(floor);
 
         // Main directional light
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-        
-        // Position light based on wall type
-        if (wallType === 'back') {
-            directionalLight.position.set(0, 5, 5); // Light from front for back wall
-        } else {
-            directionalLight.position.set(-5, 5, 0); // Light from front for right wall
-        }
-        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0); // Increased intensity
+        directionalLight.position.set(-2, 8, 4); // Repositioned to better illuminate walls
         directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 50;
+        directionalLight.shadow.bias = -0.0001;
+        
+        const d = 8;
+        directionalLight.shadow.camera.left = -d;
+        directionalLight.shadow.camera.right = d;
+        directionalLight.shadow.camera.top = d;
+        directionalLight.shadow.camera.bottom = -d;
         scene.add(directionalLight);
 
-        // Add fill lights for better wall illumination
-        const fillLight1 = new THREE.PointLight(0xffffff, 0.4);
-        const fillLight2 = new THREE.PointLight(0xffffff, 0.4);
+        // Add two point lights for better wall illumination
+        const pointLight1 = new THREE.PointLight(0xffffff, 1);
+        pointLight1.position.set(-3, 4, -3); // Position for back wall
+        pointLight1.castShadow = true;
+        scene.add(pointLight1);
 
-        if (wallType === 'back') {
-            fillLight1.position.set(-3, 3, 2);
-            fillLight2.position.set(3, 3, 2);
-        } else {
-            fillLight1.position.set(-2, 3, -2);
-            fillLight2.position.set(-2, 3, 2);
-        }
-
-        scene.add(fillLight1);
-        scene.add(fillLight2);
-
-        // Add subtle hemisphere light for natural illumination
-        const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.3);
+        const pointLight3 = new THREE.PointLight(0xffffff, 1);
+        pointLight1.position.set(-3, 2, -3); // Position for back wall
+        pointLight1.castShadow = true;
+        scene.add(pointLight3);
+    
+        const pointLight2 = new THREE.PointLight(0xffffff, 1);
+        pointLight2.position.set(3, 4, -3); // Position for right wall
+        pointLight2.castShadow = true;
+        scene.add(pointLight2);
+    
+        // Hemisphere light for natural ambient lighting
+        const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
         scene.add(hemisphereLight);
+    
+        // Set camera position for better view of wall and floor
+        if (cameraRef.current) {
+            if (wallType === 'back') {
+                cameraRef.current.position.set(0, ROOM_CONFIG.wall.height / 2, 6);
+                cameraRef.current.lookAt(0, ROOM_CONFIG.wall.height / 3, 0);
+            } else {
+                cameraRef.current.position.set(-6, ROOM_CONFIG.wall.height / 2 + 1, 0);
+                cameraRef.current.lookAt(0, ROOM_CONFIG.wall.height / 3, 0);
+            }
+            cameraRef.current.rotation.z = 0;
+        }
 
         return scene;
     }, [cameraRef]);
@@ -476,18 +387,6 @@ class RightWall extends BaseWall {
         floor.receiveShadow = true;
         room.add(floor);
 
-        // Create walls with updated click handler
-        const handleWallClick = (wallType) => {
-            setSelectedWall(wallType);
-            setIsWallView(true);
-            wallSceneRef.current = createWallScene(wallType);
-            
-            // Completely disable controls in wall view
-            if (controlsRef.current) {
-                controlsRef.current.enabled = false;
-            }
-        };
-
         // Create back wall
         const backWall = new BackWall(
             ROOM_CONFIG.wall.width,
@@ -513,9 +412,6 @@ class RightWall extends BaseWall {
             },
             cameraRef
         );
-
-        backWall.setClickHandler(handleWallClick);
-        rightWall.setClickHandler(handleWallClick);
 
         room.add(backWall.group);
         room.add(rightWall.group);
@@ -634,14 +530,17 @@ class RightWall extends BaseWall {
     
 
     const handleKeyDown = useCallback((event) => {
+        // Skip all key handling if in wall view
+        if (isWallView) return;
+    
         const state = movementState.current;
         switch (event.key) {
             case 'ArrowUp': case 'w': state.moveForward = true; break;
             case 'ArrowLeft': case 'a': state.rotateLeft = true; break;
             case 'ArrowRight': case 'd': state.rotateRight = true; break;
-            case 'v': switchView(); break; // Add view switching on 'v' key press
+            case 'v': switchView(); break;
         }
-    }, [switchView]);
+    }, [switchView, isWallView]);
 
     const handleKeyUp = useCallback((event) => {
         const state = movementState.current;
@@ -687,47 +586,75 @@ class RightWall extends BaseWall {
 
     const updateCamera = useCallback(() => {
         if (!characterRef.current || !cameraRef.current || !controlsRef.current) return;
+        
+        // Don't update camera if in wall view
+        if (isWallView) return;
     
         if (viewState.current.isThirdPerson) {
             const targetPosition = characterRef.current.position.clone();
-            targetPosition.y += CAMERA_CONFIG.thirdPerson.heightOffset * 0.5; // Adjust target height
-    
-            // Update the orbit controls target to follow the character
+            targetPosition.y += CAMERA_CONFIG.thirdPerson.heightOffset * 0.5;
             controlsRef.current.target.lerp(targetPosition, CAMERA_CONFIG.thirdPerson.smoothness);
-    
-            // Let OrbitControls handle the camera position
             controlsRef.current.update();
         } else {
-            // Fixed camera behavior remains the same
             const { position, target } = CAMERA_CONFIG.fixed;
             cameraRef.current.position.set(position.x, position.y, position.z);
             controlsRef.current.target.set(target.x, target.y, target.z);
             controlsRef.current.update();
         }
-    }, []);
+    }, [isWallView]);
     
 
-    // Modified animate function to handle both scenes
     const animate = useCallback(() => {
         animationFrameRef.current = requestAnimationFrame(animate);
         const deltaTime = Math.min(0.05, clockRef.current.getDelta());
-
+    
+        // Only update character and regular camera if not in wall view
         if (!isWallView) {
-            // Only update character and camera in room view
             if (mixerRef.current) {
                 mixerRef.current.update(deltaTime);
             }
             updateCharacterMovement(deltaTime);
             updateCamera();
         }
-
+    
         if (rendererRef.current && cameraRef.current) {
-            const currentScene = isWallView ? wallSceneRef.current : sceneRef.current;
+            const currentScene = isWallView ? 
+                wallSceneRef.current[selectedWall] : 
+                sceneRef.current;
+                
             if (currentScene) {
                 rendererRef.current.render(currentScene, cameraRef.current);
             }
         }
-    }, [updateCharacterMovement, updateCamera, isWallView]);
+    }, [updateCharacterMovement, updateCamera, isWallView, selectedWall]);
+
+    const handleEditWall = useCallback((wallType) => {
+        // Create the wall scene before setting the state
+        if (!wallSceneRef.current[wallType]) {
+            const scene = createWallScene(wallType);
+            wallSceneRef.current[wallType] = scene;
+        }
+    
+        // Now that we're sure the scene exists, update the state
+        setSelectedWall(wallType);
+        setIsWallView(true);
+    
+        // Set fixed camera position based on wall type
+        if (cameraRef.current) {
+            if (wallType === 'back') {
+                cameraRef.current.position.set(0, ROOM_CONFIG.wall.height / 2, 4);
+                cameraRef.current.lookAt(0, ROOM_CONFIG.wall.height / 2, 0);
+            } else {
+                cameraRef.current.position.set(-4, ROOM_CONFIG.wall.height / 2, 0);
+                cameraRef.current.lookAt(0, ROOM_CONFIG.wall.height / 2, 0);
+            }
+        }
+    
+        // Disable controls in wall view
+        if (controlsRef.current) {
+            controlsRef.current.enabled = false;
+        }
+    }, [createWallScene]);
 
     const handleResize = useCallback(() => {
         if (!cameraRef.current || !rendererRef.current) return;
@@ -739,46 +666,50 @@ class RightWall extends BaseWall {
 
     useEffect(() => {
         if (!mountRef.current) return;
-
+    
         // Initialize scene
         sceneRef.current = createScene();
         cameraRef.current = createCamera();
         rendererRef.current = createRenderer();
         mountRef.current.appendChild(rendererRef.current.domElement);
-
-        // Updated controls configuration to limit ground view
+    
+        // Initialize controls only for the main room view
         controlsRef.current = new OrbitControls(cameraRef.current, rendererRef.current.domElement);
-        controlsRef.current.enableDamping = true;
-        controlsRef.current.dampingFactor = 0.05;
-        controlsRef.current.minDistance = 3;
-        controlsRef.current.maxDistance = 10;
         
-        // Constrain vertical rotation to show less ground
-        controlsRef.current.minPolarAngle = Math.PI / 4;    // Minimum 45 degrees from vertical
-        controlsRef.current.maxPolarAngle = Math.PI / 2.5;  // Maximum about 72 degrees from vertical
-        
-        // Limit orbital rotation to keep focus on the wall
-        controlsRef.current.minAzimuthAngle = -Math.PI / 4; // Limit left rotation
-        controlsRef.current.maxAzimuthAngle = Math.PI / 4;  // Limit right rotation
-
+        // Disable controls by default if in wall view
+        if (isWallView) {
+            controlsRef.current.enabled = false;
+        } else {
+            // Only apply these constraints when not in wall view
+            controlsRef.current.enableDamping = true;
+            controlsRef.current.dampingFactor = 0.05;
+            controlsRef.current.minDistance = 3;
+            controlsRef.current.maxDistance = 10;
+            controlsRef.current.minPolarAngle = Math.PI / 4;
+            controlsRef.current.maxPolarAngle = Math.PI / 2.5;
+            controlsRef.current.minAzimuthAngle = -Math.PI / 4;
+            controlsRef.current.maxAzimuthAngle = Math.PI / 4;
+        }
+    
         // Add room
         sceneRef.current.add(createRoom());
         setupLights(sceneRef.current);
         loadCharacter(sceneRef.current);
-
-        // Set initial camera position to view the wall
-        cameraRef.current.position.set(0, 5, 4);
-        cameraRef.current.lookAt(0, 2, -4);
-        controlsRef.current.target.set(0, 2, -4);
-        controlsRef.current.update();
-        // Setup scene elements
+    
+        // Set initial camera position only if not in wall view
+        if (!isWallView) {
+            cameraRef.current.position.set(0, 8, 4);
+            cameraRef.current.lookAt(0, 2, -4);
+            controlsRef.current.target.set(0, 2, -4);
+            controlsRef.current.update();
+        }
+    
+        // Rest of your setup...
         setupLights(sceneRef.current);
         loadCharacter(sceneRef.current);
-
-        // Start animation loop
         animate();
-
-        // Add event listeners
+    
+        // Event listeners...
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
         window.addEventListener('resize', handleResize);
@@ -817,9 +748,28 @@ class RightWall extends BaseWall {
         };
     }, [animate, createCamera, createRoom, createRenderer, createScene, handleKeyDown, handleKeyUp, handleResize, loadCharacter, setupLights]);
 
+    useEffect(() => {
+        if (isWallView && cameraRef.current && selectedWall) {
+            if (controlsRef.current) {
+                controlsRef.current.enabled = false;
+            }
+    
+            if (selectedWall === 'back') {
+                cameraRef.current.position.set(0, ROOM_CONFIG.wall.height / 2, 8);
+                cameraRef.current.lookAt(0, ROOM_CONFIG.wall.height / 2, 0);
+            } else {
+                cameraRef.current.position.set(-8, ROOM_CONFIG.wall.height / 2, 0);
+                cameraRef.current.lookAt(0, ROOM_CONFIG.wall.height / 2, 0);
+            }
+            cameraRef.current.rotation.z = 0;
+        }
+    }, [isWallView, selectedWall]);
+
+
     return (
         <>
             <div ref={mountRef} style={{ width: '100%', height: '100%' }} />
+            {!isWallView && <WallOverlayUI onEditWall={handleEditWall} />}
             {isWallView && <WallUI />}
         </>
     );
