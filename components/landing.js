@@ -117,30 +117,30 @@ const LandingScene = () => {
         // fbx objects
         const models = [
             {
-            modelPath: 'models/birb.fbx',
-            texturePath: 'textures/T_Sparrow.png',
-            modelPosition: { x: -3, y: -3, z: -3.5 },
-            modelRotation: { x: 0, y: Math.PI / 4, z: 0 },
-            modelScale: { x: 0.06, y: 0.06, z: 0.06 }
+            modelPath: 'models/group.fbx',
+            texturePath: 'textures/T_Herring.png',
+            modelPosition: { x: 0, y: -0.5, z: 0 },
+            modelRotation: { x: 0, y: 0, z: 0 },
+            modelScale: { x: 0.03, y: 0.03, z: 0.03 }
             },
             {
             modelPath: 'models/feesh.fbx',
             texturePath: 'textures/T_Herring.png',
-            modelPosition: { x: 3, y: -3, z: -3.5 },
+            modelPosition: { x: 3, y: -4, z: 5 },
             modelRotation: { x: 0, y: Math.PI / 4, z:-Math.PI/6 },
             modelScale: { x: 0.06, y: 0.06, z: 0.06 }
             },{
-                modelPath: 'models/TeddyBearPT.fbx',
-                texturePath: 'textures/TeddyPT.TGA.png',
+                modelPath: 'models/monkey.fbx',
+                texturePath: 'textures/T_Pudu.png',
                 modelPosition: { x: -2, y: -1, z: 8 },
                 modelRotation: { x: - 2 * Math.PI / 4, y: Math.PI / 3, z: 3 * Math.PI / 5 },
-                modelScale: { x: 0.125, y: 0.125, z: 0.125 }
+                modelScale: { x: 0.5, y: 0.5, z: 0.5 }
                 },
             {
-                modelPath: 'models/lpbns_br_slipper.fbx',
-                texturePath: 'textures/T_Gecko.png',
+                modelPath: 'models/birb.fbx',
+                texturePath: 'textures/T_Sparrow.png',
                 modelPosition: { x: 4, y: -2, z:8 },
-                modelRotation: { x: Math.PI, y: 0, z: Math.PI },
+                modelRotation: { x: 0, y: Math.PI / 4, z:-Math.PI/6  },
                 modelScale: { x: 0.05, y: 0.05, z: 0.05 }
             }
         ];
