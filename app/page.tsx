@@ -25,29 +25,7 @@ export default function Home() {
           fontFamily: 'Pirata One',
           color: 'white',
           }}>
-        To The Moon
-      </div>
-      <div
-        id='team-info'
-        style={{
-        position: 'absolute',
-        bottom: '0',
-        left: '0',
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-end',
-        fontSize: '5rem',
-        fontWeight: 'bold',
-        color: 'white',
-        zIndex: 1,
-        pointerEvents: 'none',
-        userSelect: 'none',
-        padding: "20% 10%",
-        background: 'rgba(0, 0, 0, 0.1)',
-        }}>
-          NFTSocial - own your metaverse
+        FurryFi
       </div>
       <div
         id='description'
